@@ -1,6 +1,6 @@
 from pathlib import Path
 import pygame as pg
-
+from spaceship import Spaceship
 p = Path(__file__).parent
 # Window
 WIDTH, HEIGHT = 600, 400
@@ -39,35 +39,10 @@ YELLOW = (255, 255, 0)
 # We use pathlib, because we are only dealing with Paths
 # YELLOW_SPACESHIP = pg.image.load(os.path.join('Assets', 'spaceship_yellow.png'))
 
-class Spaceship:
-    def __init__(self, image_path, x, y, width, height, direction, health, colour, bullets=None, keys=None):
-        self.image = pg.transform.rotate(pg.transform.scale(pg.image.load(image_path),
-                                                            (width, height)), direction)
-        self.health = health
-        self.rect = pg.Rect(x, y,width, height)
-        self.colour = colour
-        self.bullets = bullets
-        self.Keys = keys
 
-    def handle_movement(self, key_pressed):
-        if key_pressed in self.keys:
-            if key_pressed[pg.K_a] and self.rect.x - VEL > 0 or \
-                    key_pressed[pg.K_LEFT] and red.rect.x - VEL > BORDER.x + 10:
-                self.rect.x -= VEL
-            if key_pressed[pg.K_d] and self.rect.x + VEL + self.rect.width < BORDER.x or \
-                    key_pressed[pg.K_RIGHT] and self.rect.x + VEL + self.rect.height < WIDTH:
-                self.rect.x += VEL
-            if key_pressed[pg.K_w] and self.rect.y - VEL > 0 or \
-                    key_pressed[pg.K_UP] and self.rect.y - VEL > 0:
-                self.rect.y -= VEL
-            if key_pressed[pg.K_s] and self.rect.y + 3 * VEL + self.rect.height < HEIGHT or \
-                    key_pressed[pg.K_DOWN] and red.rect.y + 3 * VEL + self.rect.height < HEIGHT:
-                self.rect.y += VEL
-
-
-yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), WIDTH * 0.25, HEIGHT * 0.5, 
+yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), WIDTH * 0.25, HEIGHT * 0.5,
                    SPACESHIP_WIDTH, SPACESHIP_HEIGHT, 90, 10, YELLOW,(pg.K_a,pg.K_d,pg.K_w,pg.K_s))
-red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'),WIDTH * 0.75, HEIGHT * 0.5, 
+red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'),WIDTH * 0.75, HEIGHT * 0.5,
                 SPACESHIP_WIDTH, SPACESHIP_HEIGHT, -90, 10, RED,(pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN))
 
 SPACE = pg.transform.scale(

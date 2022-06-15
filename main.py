@@ -20,6 +20,8 @@ SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 55, 40
 BULLET_VEL = 10
 MAX_BULLETS = 5
 BULLET_WIDTH, BULLET_HEIGHT = 5, 10
+BULLET_FIRE_SOUND = pg.mixer.load(p.joinpath('Assets','Gun+Silence.mp3')
+BULLET_HIT_SOUND = pg.mixer.load(p.joinpath('Assets','Granede+1.mp3')
 
 YELLOW_HIT = pg.USEREVENT + 1
 RED_HIT = pg.USEREVENT + 2
@@ -97,6 +99,7 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
     for bullet in yellow_bullets:
         bullet.x += BULLET_VEL
         if red.colliderect(bullet):
+            BULLET_HIT_SOUND.play()
             pg.event.post(pg.event.Event(RED_HIT))
             yellow_bullets.remove(bullet)
         elif bullet.x > WIDTH:
@@ -104,6 +107,7 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
     for bullet in red_bullets:
         bullet.x -= BULLET_VEL
         if yellow.colliderect(bullet):
+            BULLET_HIT_SOUND.play()
             pg.event.post(pg.event.Event(YELLOW_HIT))
             red_bullets.remove(bullet)
         elif bullet.x < 0:
@@ -136,9 +140,11 @@ def main():
                 if event.key == pg.K_LCTRL and len(yellow_bullets) < MAX_BULLETS:
                     bullet = pg.Rect(yellow.x + 5 + SPACESHIP_WIDTH, yellow.y + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
                     yellow_bullets.append(bullet)
+                    BULLET_FIRE_SOUND.play()
                 if event.key == pg.K_RCTRL and len(red_bullets) < MAX_BULLETS:
                     bullet = pg.Rect(red.x + 5, red.y + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
                     red_bullets.append(bullet)
+                    BULLET_FIRE_SOUND.play()
             if event.type == RED_HIT:
                 red_health -= 1
             if event.type == YELLOW_HIT:

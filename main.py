@@ -1,12 +1,12 @@
-import pygame as pg
-# import os
 from pathlib import Path
+import pygame as pg
 
 # Window
 WIDTH, HEIGHT = 600, 400
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
 BORDER = pg.Rect(WIDTH // 2 - 5, 0, 10, HEIGHT)
 pg.font.init()
+pg.mixer.init()
 pg.display.set_caption("RPG with Nimrod")
 HEALTH_FONT = pg.font.SysFont('arial', 40)
 # Game speed
@@ -35,6 +35,15 @@ p = Path(__file__).parent
 # We can use os.path.join because of different os use different writing
 # We use pathlib, because we are only dealing with Paths
 # YELLOW_SPACESHIP = pg.image.load(os.path.join('Assets', 'spaceship_yellow.png'))
+
+class Spaceship:
+    def __init__(image_path, width, height, direction, health, bullets=None):
+        self.image = pg.transform.rotate(pg.transform.scale(pg.image.load(image_path),(width, height)),direction)
+        self.width = width
+        self.height = height
+        self.health = health
+        self.bullets = bullets
+            
 
 YELLOW_SPACESHIP = pg.transform.rotate(pg.transform.scale(
     pg.image.load(p.joinpath('Assets', 'spaceship_yellow.png')), (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 90)

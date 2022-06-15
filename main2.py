@@ -25,9 +25,6 @@ BULLET_WIDTH, BULLET_HEIGHT = 5, 10
 BULLET_FIRE_SOUND = pg.mixer.Sound('Assets/game-gun-shot.mp3')
 BULLET_HIT_SOUND = pg.mixer.Sound('Assets/explosion-01.mp3')
 
-YELLOW_HIT = pg.USEREVENT + 1
-RED_HIT = pg.USEREVENT + 2
-
 # Colors
 WHITE = (200, 200, 255)
 BLACK = (0, 0, 0)
@@ -41,9 +38,10 @@ YELLOW = (255, 255, 0)
 
 
 yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), WIDTH * 0.25, HEIGHT * 0.5,
-                   SPACESHIP_WIDTH, SPACESHIP_HEIGHT, 90, 10, YELLOW,(pg.K_a,pg.K_d,pg.K_w,pg.K_s))
-red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'),WIDTH * 0.75, HEIGHT * 0.5,
-                SPACESHIP_WIDTH, SPACESHIP_HEIGHT, -90, 10, RED,(pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN))
+                   SPACESHIP_WIDTH, SPACESHIP_HEIGHT, 90, 10, YELLOW, BULLET_VEL, (pg.K_a, pg.K_d, pg.K_w, pg.K_s))
+red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'), WIDTH * 0.75, HEIGHT * 0.5,
+                SPACESHIP_WIDTH, SPACESHIP_HEIGHT, -90, 10, RED, -1 * BULLET_VEL,
+                (pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN))
 
 SPACE = pg.transform.scale(
     pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
@@ -65,25 +63,6 @@ def draw_window(red, yellow):
     pg.display.update()
 
 
-def handle_bullets(yellow, red):
-    for bullet in yellow.bullets:
-        bullet.x += BULLET_VEL
-        if red.rect.colliderect(bullet):
-            BULLET_HIT_SOUND.play()
-            pg.event.post(pg.event.Event(RED_HIT))
-            yellow.bullets.remove(bullet)
-        elif bullet.x > WIDTH:
-            yellow.bullets.remove(bullet)
-    for bullet in red.bullets:
-        bullet.x -= BULLET_VEL
-        if yellow.rect.colliderect(bullet):
-            BULLET_HIT_SOUND.play()
-            pg.event.post(pg.event.Event(YELLOW_HIT))
-            red.bullets.remove(bullet)
-        elif bullet.x < 0:
-            red.bullets.remove(bullet)
-
-
 def draw_winner(text):
     draw_text = WINNER_FONT.render(text, 1, WHITE)
     WIN.blit(draw_text, (WIDTH / 2 - draw_text.get_width() / 2, HEIGHT / 2 - draw_text.get_height() / 2))
@@ -94,13 +73,10 @@ def draw_winner(text):
 # Dealing with the logic of the game
 def main():
     run = True
-    red_health = 10
-    yellow_health = 10
     winner_text = ""
 
     # Set the pace of the game
     clock = pg.time.Clock()
-
 
     while run:
         # The game will run at FPS time per seconds
@@ -120,13 +96,10 @@ def main():
                     bullet = pg.Rect(red.rect.x + 5, red.rect.d + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
                     red.bullets.append(bullet)
                     BULLET_FIRE_SOUND.play()
-            if event.type == RED_HIT:
-                red_health -= 1
-            if event.type == YELLOW_HIT:
-                yellow_health -= 1
-        if red_health < 1:
+
+        if red.health < 1:
             winner_text = "Yellow Wins!"
-        if yellow_health < 1:
+        if yellow.health < 1:
             winner_text = "Red Wins!"
         if winner_text != "":
             draw_winner(winner_text)
@@ -135,7 +108,8 @@ def main():
         key_pressed = pg.key.get_pressed()
         yellow.handle_movement(key_pressed)
         red.handle_movement(key_pressed)
-        handle_bullets(yellow, red)
+        yellow.handle_bullets(red)
+        red.handle_bullets(yellow)
 
         draw_window(red, yellow)
     main()

@@ -5,9 +5,10 @@ from pathlib import Path
 # Window
 WIDTH, HEIGHT = 600, 400
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
-BORDER = pg.Rect(WIDTH / 2 - 5, 0, 10, HEIGHT)
+BORDER = pg.Rect(WIDTH // 2 - 5, 0, 10, HEIGHT)
+pg.font.init()
 pg.display.set_caption("RPG with Nimrod")
-
+HEALTH_FONT = pg.font.SysFont('arial', 40)
 # Game speed
 FPS = 60
 
@@ -26,7 +27,8 @@ RED_HIT = pg.USEREVENT + 2
 # Colors
 WHITE = (200, 200, 255)
 BLACK = (0, 0, 0)
-
+RED = (255,0,0)
+YELLOW = (255,255,0)
 
 p = Path(__file__).parent
 
@@ -40,16 +42,23 @@ YELLOW_SPACESHIP = pg.transform.rotate(pg.transform.scale(
 RED_SPACESHIP = pg.transform.rotate(pg.transform.scale(
     pg.image.load(p.joinpath('Assets', 'spaceship_red.png')), (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), -90)
 
+SPACE = pg.transform.scale(
+    pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
 
-def draw_window(red, yellow, red_bullets, yellow_bullets):
-    WIN.fill(WHITE)
+def draw_window(red, yellow, red_bullets, yellow_bullets, red_health, yellow_health):
+    # WIN.fill(WHITE)
+    WIN.blit(SPACE,(0,0))
     pg.draw.rect(WIN, BLACK, BORDER)
+    red_health_text = HEALTH_FONT.render(f'Health:{red_health}',1,WHITE)
+    yellow_health_text = HEALTH_FONT.render(f'Health:{yellow_health}',1,WHITE)
+    WIN.blit(red_health_text, (WIDTH-red_health_text.get_width()-10,10))
+    WIN.blit(yellow_health_text, (10, 10))
     WIN.blit(YELLOW_SPACESHIP, (yellow.x, yellow.y))
     WIN.blit(RED_SPACESHIP, (red.x, red.y))
     for bullet in red_bullets:
-        pg.draw.rect(WIN, BLACK, bullet)
+        pg.draw.rect(WIN, RED, bullet)
     for bullet in yellow_bullets:
-        pg.draw.rect(WIN, BLACK, bullet)
+        pg.draw.rect(WIN, YELLOW, bullet)
     pg.display.update()
 
 
@@ -79,12 +88,14 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
     for bullet in yellow_bullets:
         bullet.x += BULLET_VEL
         if red.colliderect(bullet):
+            pg.event.post(pg.event.Event(RED_HIT))
             yellow_bullets.remove(bullet)
         elif bullet.x > WIDTH:
             yellow_bullets.remove(bullet)
     for bullet in red_bullets:
         bullet.x -= BULLET_VEL
         if yellow.colliderect(bullet):
+            pg.event.post(pg.event.Event(YELLOW_HIT))
             red_bullets.remove(bullet)
         elif bullet.x < 0:
             red_bullets.remove(bullet)
@@ -93,6 +104,9 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
 # Dealing with the logic of the game
 def main():
     run = True
+    red_health = 10
+    yellow_health = 10
+    winner_text = ""
 
     # Set the pace of the game
     clock = pg.time.Clock()
@@ -111,18 +125,29 @@ def main():
                 run = False
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_LCTRL and len(yellow_bullets) < MAX_BULLETS:
-                    bullet = pg.Rect(yellow.x + 5 + SPACESHIP_WIDTH, yellow.y + SPACESHIP_HEIGHT / 2, BULLET_WIDTH, BULLET_HEIGHT)
+                    bullet = pg.Rect(yellow.x + 5 + SPACESHIP_WIDTH, yellow.y + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
                     yellow_bullets.append(bullet)
                 if event.key == pg.K_RCTRL and len(red_bullets) < MAX_BULLETS:
-                    bullet = pg.Rect(red.x + 5, red.y + SPACESHIP_HEIGHT / 2, BULLET_WIDTH, BULLET_HEIGHT)
+                    bullet = pg.Rect(red.x + 5, red.y + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
                     red_bullets.append(bullet)
+            if event.type == RED_HIT:
+                red_health -= 1
+            if event.type == YELLOW_HIT:
+                yellow_health -= 1
+        if red_health < 1:
+            winner_text = "Yellow Wins!"
+        if yellow_health < 1:
+            winner_text = "Red Wins!"
+        if winner_text != "":
+            run = False
+        
 
         key_pressed = pg.key.get_pressed()
         yellow_handle_movement(key_pressed, yellow)
         red_handle_movement(key_pressed, red)
         handle_bullets(yellow_bullets, red_bullets, yellow, red)
 
-        draw_window(red, yellow, red_bullets, yellow_bullets)
+        draw_window(red, yellow, red_bullets, yellow_bullets, red_health, yellow_health)
 
 
 if __name__ == "__main__":

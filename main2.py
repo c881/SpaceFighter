@@ -5,6 +5,8 @@ p = Path(__file__).parent
 # Window
 WIDTH, HEIGHT = 600, 400
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
+SPACE = pg.transform.scale(pg.image.load(p.joinpath('Assets', 'space.png')),
+                           (WIDTH, HEIGHT))
 BORDER = pg.Rect(WIDTH // 2 - 5, 0, 10, HEIGHT)
 pg.font.init()
 pg.mixer.init()
@@ -40,16 +42,20 @@ YELLOW = (255, 255, 0)
 # YELLOW_SPACESHIP = pg.image.load(os.path.join('Assets', 'spaceship_yellow.png'))
 
 class Spaceship:
-    def __init__(self, image_path, x, y, direction, vel, health, colour, keys=None, bullets=None):
+    def __init__(self, image_path, x, y, direction, vel, health, colour, bullet_vel, event, keys=None,
+                 bullets=None, text=''):
         
         self.image = pg.transform.rotate(pg.transform.scale(pg.image.load(image_path),
-                                        (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), direction)
+                (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), direction)
         self.rect = pg.Rect(x, y, SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
         self.vel = vel
         self.colour = colour
         self.health = health
         self.bullets = bullets
+        self.bullet_vel = bullet_vel
+        self.event = event
         self.keys = keys
+        self.text = text
 
     def handle_movement(self, key_pressed):
         if key_pressed in self.keys:
@@ -66,15 +72,28 @@ class Spaceship:
                  key_pressed[pg.K_DOWN] and self.rect.y + 3 * self.vel + self.rect.height < HEIGHT:
                 self.rect.y += self.vel
 
+    def handle_bullets(self, target):
+        for bullet in self.bullets:
+            bullet.x += self.bullet_vel
+            if target.rect.colliderect(bullet):
+                BULLET_HIT_SOUND.play()
+                # pg.event.post(pg.event.Event(target.event))
+                target.health -= 1
+                self.bullets.remove(bullet)
+            elif 0 < bullet.x > WIDTH:
+                self.bullets.remove(bullet)
 
-yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), x=WIDTH * 0.25, y=HEIGHT * 0.5,
-                   direction=90, vel=VEL, health=10, colour=YELLOW,
-                   keys=(pg.K_a, pg.K_d, pg.K_w, pg.K_s), bullets=[])
-red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'), WIDTH * 0.75, HEIGHT * 0.5,
-                 -90, VEL, 10, RED, (pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN),[])
+    def fire(self, key):
+        if key in (pg.K_LCTRL, pg.K_RCTRL) and len(self.bullets) < MAX_BULLETS:
+            if self.colour == YELLOW:
+                bullet = pg.Rect(self.rect.x + 5 + self.rect.width, self.rect.y + self.rect.height // 2,
+                             BULLET_WIDTH, BULLET_HEIGHT)
+            else:
+                bullet = pg.Rect(self.rect.x + 5, self.rect.y + self.rect.height // 2, BULLET_WIDTH, BULLET_HEIGHT)
 
-SPACE = pg.transform.scale(
-    pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
+            self.bullets.append(bullet)
+            BULLET_FIRE_SOUND.play()
+
 
 def draw_window(red, yellow):
     # WIN.fill(WHITE)
@@ -93,28 +112,6 @@ def draw_window(red, yellow):
     pg.display.update()
 
 
-
-
-
-def handle_bullets(yellow, red):
-    for bullet in yellow.bullets:
-        bullet.x += BULLET_VEL
-        if red.rect.colliderect(bullet):
-            BULLET_HIT_SOUND.play()
-            pg.event.post(pg.event.Event(RED_HIT))
-            yellow.bullets.remove(bullet)
-        elif bullet.x > WIDTH:
-            yellow.bullets.remove(bullet)
-    for bullet in red.bullets:
-        bullet.x -= BULLET_VEL
-        if yellow.rect.colliderect(bullet):
-            BULLET_HIT_SOUND.play()
-            pg.event.post(pg.event.Event(YELLOW_HIT))
-            red.bullets.remove(bullet)
-        elif bullet.x < 0:
-            red.bullets.remove(bullet)
-
-
 def draw_winner(text):
     draw_text = WINNER_FONT.render(text, 1, WHITE)
     WIN.blit(draw_text, (WIDTH / 2 - draw_text.get_width() / 2, HEIGHT / 2 - draw_text.get_height() / 2))
@@ -125,13 +122,17 @@ def draw_winner(text):
 # Dealing with the logic of the game
 def main():
     run = True
-    red_health = 10
-    yellow_health = 10
-    winner_text = ""
+    yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), x=WIDTH * 0.25, y=HEIGHT * 0.5,
+                       direction=90, vel=VEL, health=10, colour=YELLOW, bullet_vel=BULLET_VEL, event=YELLOW_HIT,
+                       keys=(pg.K_a, pg.K_d, pg.K_w, pg.K_s), bullets=[],text="Yellow Wins!")
+    red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'), WIDTH * 0.75, HEIGHT * 0.5,
+                    -90, VEL, 10, RED, -1 * BULLET_VEL, RED_HIT, (pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN), [], "Red Wins!")
+
+    SPACE = pg.transform.scale(
+        pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
 
     # Set the pace of the game
     clock = pg.time.Clock()
-
 
     while run:
         # The game will run at FPS time per seconds
@@ -142,25 +143,16 @@ def main():
                 pg.quit()
 
             if event.type == pg.KEYDOWN:
-                if event.key == pg.K_LCTRL and len(yellow.bullets) < MAX_BULLETS:
-                    bullet = pg.Rect(yellow.rect.x + 5 + SPACESHIP_WIDTH, yellow.rect.y + SPACESHIP_HEIGHT // 2,
-                                     BULLET_WIDTH, BULLET_HEIGHT)
-                    yellow.bullets.append(bullet)
-                    BULLET_FIRE_SOUND.play()
-                if event.key == pg.K_RCTRL and len(red.bullets) < MAX_BULLETS:
-                    bullet = pg.Rect(red.rect.x + 5, red.rect.y + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
-                    red.bullets.append(bullet)
-                    BULLET_FIRE_SOUND.play()
-            if event.type == RED_HIT:
-                red_health -= 1
-            if event.type == YELLOW_HIT:
-                yellow_health -= 1
-        if red_health < 1:
-            winner_text = "Yellow Wins!"
-        if yellow_health < 1:
-            winner_text = "Red Wins!"
-        if winner_text != "":
-            draw_winner(winner_text)
+                if event.key == pg.K_LCTRL:
+                    yellow.fire(event.key)
+                if event.key == pg.K_RCTRL:
+                    red.fire(event.key)
+
+        if red.health < 1:
+            draw_winner(yellow.text)
+            break
+        if yellow.health < 1:
+            draw_winner(red.text)
             break
 
         key_pressed = pg.key.get_pressed()

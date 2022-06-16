@@ -40,25 +40,41 @@ YELLOW = (255, 255, 0)
 # YELLOW_SPACESHIP = pg.image.load(os.path.join('Assets', 'spaceship_yellow.png'))
 
 class Spaceship:
-    def __init__(self, image_path, x, y, width, height, direction, health, colour, bullets=None):
+    def __init__(self, image_path, x, y, direction, vel, health, colour, keys=None, bullets=None):
+        
         self.image = pg.transform.rotate(pg.transform.scale(pg.image.load(image_path),
-                                                            (width, height)), direction)
-        self.width = width
-        self.height = height
-        self.health = health
-        self.rect = pg.Rect(x, y,width, height)
+                                        (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), direction)
+        self.rect = pg.Rect(x, y, SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
+        self.vel = vel
         self.colour = colour
+        self.health = health
         self.bullets = bullets
+        self.keys = keys
+
+    def handle_movement(self, key_pressed):
+        if key_pressed in self.keys:
+            if key_pressed[pg.K_a] and self.rect.x - self.vel > 0 or \
+                 key_pressed[pg.K_LEFT] and self.rect.x - self.vel > BORDER.x + 10:
+                self.rect.x -= self.vel
+            if key_pressed[pg.K_d] and self.rect.x + self.vel + self.rect.width < BORDER.x or \
+                 key_pressed[pg.K_RIGHT] and self.rect.x + self.vel + self.rect.height < WIDTH:
+                self.rect.x += self.vel
+            if key_pressed[pg.K_w] and self.rect.y - self.vel > 0 or \
+                 key_pressed[pg.K_UP] and self.rect.y - self.vel > 0:
+                self.rect.y -= self.vel
+            if key_pressed[pg.K_s] and self.rect.y + 3 * self.vel + self.rect.height < HEIGHT or \
+                 key_pressed[pg.K_DOWN] and self.rect.y + 3 * self.vel + self.rect.height < HEIGHT:
+                self.rect.y += self.vel
 
 
-yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), WIDTH * 0.25, HEIGHT * 0.5, 
-                   SPACESHIP_WIDTH, SPACESHIP_HEIGHT, 90, 10, YELLOW)
-red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'),WIDTH * 0.75, HEIGHT * 0.5, 
-                SPACESHIP_WIDTH, SPACESHIP_HEIGHT, -90, 10, RED)
+yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), x=WIDTH * 0.25, y=HEIGHT * 0.5,
+                   direction=90, vel=VEL, health=10, colour=YELLOW,
+                   keys=(pg.K_a, pg.K_d, pg.K_w, pg.K_s), bullets=[])
+red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'), WIDTH * 0.75, HEIGHT * 0.5,
+                 -90, VEL, 10, RED, (pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN),[])
 
 SPACE = pg.transform.scale(
     pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
-
 
 def draw_window(red, yellow):
     # WIN.fill(WHITE)
@@ -69,7 +85,7 @@ def draw_window(red, yellow):
     WIN.blit(red_health_text, (WIDTH - red_health_text.get_width() - 10, 10))
     WIN.blit(yellow_health_text, (10, 10))
     WIN.blit(yellow.image, (yellow.rect.x, yellow.rect.y))
-    WIN.blit(red.image, (red.rect.x, red.rect.d))
+    WIN.blit(red.image, (red.rect.x, red.rect.y))
     for bullet in red.bullets:
         pg.draw.rect(WIN, RED, bullet)
     for bullet in yellow.bullets:
@@ -77,26 +93,7 @@ def draw_window(red, yellow):
     pg.display.update()
 
 
-def yellow_handle_movement(key_pressed, yellow):
-    if key_pressed[pg.K_a] and yellow.rect.x - VEL > 0:
-        yellow.rect.x -= VEL
-    if key_pressed[pg.K_d] and yellow.rect.x + VEL + yellow.width < BORDER.x:
-        yellow.rect.x += VEL
-    if key_pressed[pg.K_w] and yellow.rect.y - VEL > 0:
-        yellow.rect.y -= VEL
-    if key_pressed[pg.K_s] and yellow.rect.y + 3 * VEL + yellow.height < HEIGHT:
-        yellow.rect.y += VEL
 
-
-def red_handle_movement(key_pressed, red):
-    if key_pressed[pg.K_LEFT] and red.rect.x - VEL > BORDER.x + 10:
-        red.rect.x -= VEL
-    if key_pressed[pg.K_RIGHT] and red.rect.x + VEL + red.height < WIDTH:
-        red.rect.x += VEL
-    if key_pressed[pg.K_UP] and red.rect.y - VEL > 0:
-        red.rect.y -= VEL
-    if key_pressed[pg.K_DOWN] and red.rect.y + 3 * VEL + red.height < HEIGHT:
-        red.rect.y += VEL
 
 
 def handle_bullets(yellow, red):
@@ -151,7 +148,7 @@ def main():
                     yellow.bullets.append(bullet)
                     BULLET_FIRE_SOUND.play()
                 if event.key == pg.K_RCTRL and len(red.bullets) < MAX_BULLETS:
-                    bullet = pg.Rect(red.rect.x + 5, red.rect.d + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
+                    bullet = pg.Rect(red.rect.x + 5, red.rect.y + SPACESHIP_HEIGHT // 2, BULLET_WIDTH, BULLET_HEIGHT)
                     red.bullets.append(bullet)
                     BULLET_FIRE_SOUND.play()
             if event.type == RED_HIT:
@@ -167,9 +164,10 @@ def main():
             break
 
         key_pressed = pg.key.get_pressed()
-        yellow_handle_movement(key_pressed, yellow)
-        red_handle_movement(key_pressed, red)
-        handle_bullets(yellow, red)
+        yellow.handle_movement(key_pressed)
+        red.handle_movement(key_pressed)
+        yellow.handle_bullets(red)
+        red.handle_bullets(yellow)
 
         draw_window(red, yellow)
     main()

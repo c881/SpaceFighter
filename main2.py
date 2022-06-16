@@ -13,6 +13,8 @@ pg.mixer.init()
 pg.display.set_caption("RPG with Nimrod")
 HEALTH_FONT = pg.font.SysFont('arial', 40)
 WINNER_FONT = pg.font.SysFont('comicsans', 100)
+ASDW_KEYS = (pg.K_a, pg.K_d, pg.K_w, pg.K_s)
+ARROWS_KEYS = (pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN)
 # Game speed
 FPS = 60
 
@@ -77,7 +79,6 @@ class Spaceship:
             bullet.x += self.bullet_vel
             if target.rect.colliderect(bullet):
                 BULLET_HIT_SOUND.play()
-                # pg.event.post(pg.event.Event(target.event))
                 target.health -= 1
                 self.bullets.remove(bullet)
             elif 0 < bullet.x > WIDTH:
@@ -124,9 +125,9 @@ def main():
     run = True
     yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), x=WIDTH * 0.25, y=HEIGHT * 0.5,
                        direction=90, vel=VEL, health=10, colour=YELLOW, bullet_vel=BULLET_VEL, event=YELLOW_HIT,
-                       keys=(pg.K_a, pg.K_d, pg.K_w, pg.K_s), bullets=[],text="Yellow Wins!")
+                       keys=ASDW_KEYS, bullets=[],text="Yellow Wins!")
     red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'), WIDTH * 0.75, HEIGHT * 0.5,
-                    -90, VEL, 10, RED, -1 * BULLET_VEL, RED_HIT, (pg.K_LEFT, pg.K_RIGHT, pg.K_UP, pg.K_DOWN), [], "Red Wins!")
+                    -90, VEL, 10, RED, -1 * BULLET_VEL, RED_HIT, ARROWS_KEYS, [], "Red Wins!")
 
     SPACE = pg.transform.scale(
         pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
@@ -162,6 +163,7 @@ def main():
         red.handle_bullets(yellow)
 
         draw_window(red, yellow)
+    event.key =''
     main()
 
 

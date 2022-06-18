@@ -44,8 +44,8 @@ YELLOW = (255, 255, 0)
 # YELLOW_SPACESHIP = pg.image.load(os.path.join('Assets', 'spaceship_yellow.png'))
 
 class Spaceship:
-    def __init__(self, image_path, x, y, direction, vel, health, colour, bullet_vel, event, keys=None,
-                 bullets=None, text=''):
+    def __init__(self, image_path, x, y, direction, vel, health, colour, left, right,
+                 bullet_vel, event, keys=None, bullets=None, text=''):
         
         self.image = pg.transform.rotate(pg.transform.scale(pg.image.load(image_path),
                 (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), direction)
@@ -53,6 +53,8 @@ class Spaceship:
         self.vel = vel
         self.colour = colour
         self.health = health
+        self.left = left
+        self.right = right
         self.bullets = bullets
         self.bullet_vel = bullet_vel
         self.event = event
@@ -60,19 +62,20 @@ class Spaceship:
         self.text = text
 
     def handle_movement(self, key_pressed):
-        if key_pressed in self.keys:
-            if key_pressed[pg.K_a] and self.rect.x - self.vel > 0 or \
-                 key_pressed[pg.K_LEFT] and self.rect.x - self.vel > BORDER.x + 10:
-                self.rect.x -= self.vel
-            if key_pressed[pg.K_d] and self.rect.x + self.vel + self.rect.width < BORDER.x or \
-                 key_pressed[pg.K_RIGHT] and self.rect.x + self.vel + self.rect.height < WIDTH:
-                self.rect.x += self.vel
-            if key_pressed[pg.K_w] and self.rect.y - self.vel > 0 or \
-                 key_pressed[pg.K_UP] and self.rect.y - self.vel > 0:
-                self.rect.y -= self.vel
-            if key_pressed[pg.K_s] and self.rect.y + 3 * self.vel + self.rect.height < HEIGHT or \
-                 key_pressed[pg.K_DOWN] and self.rect.y + 3 * self.vel + self.rect.height < HEIGHT:
-                self.rect.y += self.vel
+        for key in self.keys:
+            if key_pressed[key]:
+                if self.rect.x - self.vel > self.left and \
+                    (key_pressed[pg.K_LEFT] or key_pressed[pg.K_a]) :
+                    self.rect.x -= self.vel
+                if self.rect.x + self.vel + self.rect.width < self.right and \
+                    (key_pressed[pg.K_RIGHT] or key_pressed[pg.K_d] ):
+                    self.rect.x += self.vel
+                if self.rect.y - self.vel > 0 and \
+                     (key_pressed[pg.K_UP] or key_pressed[pg.K_w]):
+                    self.rect.y -= self.vel
+                if  self.rect.y + 3 * self.vel + self.rect.height < HEIGHT and \
+                     (key_pressed[pg.K_s] or key_pressed[pg.K_DOWN]):
+                    self.rect.y += self.vel
 
     def handle_bullets(self, target):
         for bullet in self.bullets:
@@ -104,8 +107,10 @@ def draw_window(red, yellow):
     yellow_health_text = HEALTH_FONT.render(f'Health:{yellow.health}', 1, WHITE)
     WIN.blit(red_health_text, (WIDTH - red_health_text.get_width() - 10, 10))
     WIN.blit(yellow_health_text, (10, 10))
-    WIN.blit(yellow.image, (yellow.rect.x, yellow.rect.y))
-    WIN.blit(red.image, (red.rect.x, red.rect.y))
+    for spaceship in (yellow, red):
+        WIN.blit(spaceship.image, (spaceship.rect.x, spaceship.rect.y))
+    # WIN.blit(yellow.image, (yellow.rect.x, yellow.rect.y))
+    # WIN.blit(red.image, (red.rect.x, red.rect.y))
     for bullet in red.bullets:
         pg.draw.rect(WIN, RED, bullet)
     for bullet in yellow.bullets:
@@ -121,13 +126,13 @@ def draw_winner(text):
 
 
 # Dealing with the logic of the game
-def main():
-    run = True
+def main(run):
     yellow = Spaceship(p.joinpath('Assets', 'spaceship_yellow.png'), x=WIDTH * 0.25, y=HEIGHT * 0.5,
-                       direction=90, vel=VEL, health=10, colour=YELLOW, bullet_vel=BULLET_VEL, event=YELLOW_HIT,
+                       direction=90, vel=VEL, health=10, colour=YELLOW, left=0, right=BORDER.x,
+                       bullet_vel=BULLET_VEL, event=YELLOW_HIT,
                        keys=ASDW_KEYS, bullets=[],text="Yellow Wins!")
     red = Spaceship(p.joinpath('Assets', 'spaceship_red.png'), WIDTH * 0.75, HEIGHT * 0.5,
-                    -90, VEL, 10, RED, -1 * BULLET_VEL, RED_HIT, ARROWS_KEYS, [], "Red Wins!")
+                    -90, VEL, 10, RED, BORDER.x + BORDER.width, WIDTH, -1 * BULLET_VEL, RED_HIT, ARROWS_KEYS, [], "Red Wins!")
 
     SPACE = pg.transform.scale(
         pg.image.load(p.joinpath('Assets', 'space.png')), (WIDTH, HEIGHT))
@@ -156,16 +161,18 @@ def main():
             draw_winner(red.text)
             break
 
-        key_pressed = pg.key.get_pressed()
-        yellow.handle_movement(key_pressed)
-        red.handle_movement(key_pressed)
+        if any(pg.key.get_pressed()):
+            key_pressed = pg.key.get_pressed()
+            yellow.handle_movement(key_pressed)
+            red.handle_movement(key_pressed)
         yellow.handle_bullets(red)
         red.handle_bullets(yellow)
 
         draw_window(red, yellow)
-    event.key =''
-    main()
+    return run
 
 
 if __name__ == "__main__":
-    main()
+    run = True
+    while run:
+        main(run)

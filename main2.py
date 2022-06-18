@@ -3,7 +3,7 @@ import pygame as pg
 
 p = Path(__file__).parent
 # Window
-WIDTH, HEIGHT = 600, 400
+WIDTH, HEIGHT = 900, 600
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
 SPACE = pg.transform.scale(pg.image.load(p.joinpath('Assets', 'space.png')),
                            (WIDTH, HEIGHT))
@@ -25,7 +25,7 @@ SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 55, 40
 # Bullets
 BULLET_VEL = 10
 MAX_BULLETS = 5
-BULLET_WIDTH, BULLET_HEIGHT = 5, 10
+BULLET_WIDTH, BULLET_HEIGHT = 10, 5
 BULLET_FIRE_SOUND = pg.mixer.Sound('Assets/game-gun-shot.mp3')
 BULLET_HIT_SOUND = pg.mixer.Sound('Assets/explosion-01.mp3')
 
@@ -84,7 +84,7 @@ class Spaceship:
                 BULLET_HIT_SOUND.play()
                 target.health -= 1
                 self.bullets.remove(bullet)
-            elif 0 < bullet.x > WIDTH:
+            elif bullet.x< 0 or bullet.x  > WIDTH:
                 self.bullets.remove(bullet)
 
     def fire(self, key):
